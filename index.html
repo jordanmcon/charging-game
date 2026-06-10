@@ -74,7 +74,7 @@ button.primary:hover{background:var(--teal);border-color:var(--teal)}
     </div>
     <p>What you're up against:</p>
     <ul>
-      <li><b>Charging curves.</b> Cars pull peak power at low state of charge, then taper hard above ~45%. Demand at your site breathes in and out.</li>
+      <li><b>Charging curves.</b> Cars pull peak power at low state of charge, then taper hard as the battery charges. Demand at your site breathes in and out.</li>
       <li><b>A fixed grid connection.</b> The utility has already sized this site's interconnection — somewhere between 400 and 1000&nbsp;kW. You can't raise it, but you <em>can</em> cap your draw below it to shrink your billed peak.</li>
       <li><b>Demand charges.</b> The utility bills your highest 15-minute average draw at $18/kW-month. One bad rush hour sets your bill.</li>
       <li><b>The queue.</b> Drivers will wait 5–15 minutes for a port, then leave angry.</li>
@@ -96,7 +96,7 @@ button.primary:hover{background:var(--teal);border-color:var(--teal)}
       <div><label>Ports: <span class="val" id="vP">6</span></label><input type="range" id="iP" min="2" max="12" step="1" value="6"></div>
       <div><label>Power per port: <span class="val" id="vK">200 kW</span></label><input type="range" id="iK" min="100" max="400" step="50" value="200"></div>
       <div><label>Grid connection (fixed by site)</label><div class="val" id="vG" style="font-size:15px;padding-top:2px">—</div></div>
-      <div><label>Grid draw limit: <span class="val" id="vL">—</span></label><input type="range" id="iL" min="100" max="1000" step="50" value="1000"></div>
+      <div><label>Grid limit: <span class="val" id="vL">—</span></label><input type="range" id="iL" min="100" max="1000" step="50" value="1000"></div>
       <div><label>Charging price: <span class="val" id="vC">$0.45/kWh</span></label><input type="range" id="iC" min="0.30" max="0.75" step="0.01" value="0.45"></div>
       <div style="display:flex;align-items:center;gap:8px;padding-top:14px"><input type="checkbox" id="iB"><label for="iB" style="margin:0;font-size:14px;color:var(--ink)">Battery (380 kWh / 250 kW)</label></div>
       <div><label>Cabinets (800 kW per 6 ports): <span class="val" id="vCb">1</span></label><div class="val" id="vCap" style="font-size:14px;padding-top:2px">—</div></div>
