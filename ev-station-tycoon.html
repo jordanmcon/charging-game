@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Station Tycoon — EV charging site design game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14213D; --paper:#F7F6F2; --surface:#FFFFFF; --line:#DDDAD2;
+  --volt:#F4A11A; --teal:#0E8A6D; --red:#C8401F; --amber:#C97E10; --blue:#2D6CB5;
+  --muted:#5E6470; --faint:#9AA0AB;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px 48px}
+header.site{border-bottom:3px solid var(--ink);padding:18px 0 14px;margin-bottom:24px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px}
+h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.01em}
+h1 .bolt{color:var(--volt)}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+h2{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:500;margin-bottom:10px}
+h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:500;margin-bottom:8px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 24px}
+.cfg label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+.cfg .val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--teal)}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--teal)}
+button{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:500;color:var(--ink);background:var(--surface);border:1.5px solid var(--ink);border-radius:8px;padding:8px 16px;cursor:pointer}
+button:hover{background:var(--ink);color:#fff}
+button:disabled{opacity:0.35;pointer-events:none}
+button.primary{background:var(--ink);color:#fff}
+button.primary:hover{background:var(--teal);border-color:var(--teal)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.clock{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.mc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.mc .l{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--faint)}
+.mc .n{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:500;margin-top:3px}
+.meter{margin-bottom:10px}
+.meter .t{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.meter .t .num{font-family:'IBM Plex Mono',monospace}
+.bar{height:9px;border-radius:5px;background:#E9E6DE;overflow:hidden;margin-top:5px}
+.bar>div{height:100%;border-radius:5px;transition:width 0.1s linear}
+.ports{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.port{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:108px}
+.port .hd{font-size:12px;color:var(--muted)}
+.port .pw{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;margin-top:4px}
+.port .ft{font-size:11px;color:var(--faint);margin-top:5px;font-family:'IBM Plex Mono',monospace}
+.qrow{font-size:13px;color:var(--muted);margin-bottom:16px;font-family:'IBM Plex Mono',monospace}
+.note{font-size:13px;color:var(--muted)}
+#overlay{position:fixed;inset:0;background:rgba(20,33,61,0.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+.brief{background:var(--surface);max-width:640px;width:100%;border-radius:12px;border-top:6px solid var(--volt);padding:28px 30px;max-height:90vh;overflow:auto}
+.brief .stamp{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px}
+.brief h2{font-size:26px;font-weight:700;margin-bottom:14px}
+.brief p{margin-bottom:12px}
+.brief ul{margin:0 0 14px 18px;padding:0}
+.brief li{margin-bottom:7px}
+.obj{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:16px}
+.obj b{font-weight:500;font-family:'Space Grotesk',sans-serif}
+@media (max-width:560px){.brief{padding:20px}.brief h2{font-size:21px}}
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="brief">
+    <div class="stamp">SITE 042 · COMMISSIONING BRIEF · CONFIDENTIAL</div>
+    <h2>You're designing a fast charging site.</h2>
+    <p>A fuel &amp; convenience retailer has given you one parcel, one budget, and one shot at the interconnection application. Drivers will show up stochastically all day — sometimes one an hour, sometimes four in ten minutes — in everything from a 60&nbsp;kW-max older hatchback to a 400&nbsp;kW-capable truck. Each one expects the power their car can take.</p>
+    <div class="obj">
+      <b>Objective:</b> maximize daily profit <em>and</em> driver happiness — the share of drivers who average at least 90% of the power their vehicle requests across their session. Drivers who give up because the site is full count as unhappy.
+    </div>
+    <p>What you're up against:</p>
+    <ul>
+      <li><b>Charging curves.</b> Cars pull peak power at low state of charge, then taper hard above ~45%. Demand at your site breathes in and out.</li>
+      <li><b>A fixed grid connection.</b> The utility has already sized this site's interconnection — somewhere between 400 and 1000&nbsp;kW. You can't raise it, but you <em>can</em> cap your draw below it to shrink your billed peak.</li>
+      <li><b>Demand charges.</b> The utility bills your highest 15-minute average draw at $18/kW-month. One bad rush hour sets your bill.</li>
+      <li><b>The queue.</b> Drivers will wait 5–15 minutes for a port, then leave angry.</li>
+    </ul>
+    <p class="note">A battery (380 kWh / 250 kW) lets you serve demand above your grid draw limit. The aggressive play: cap your draw well below the interconnection, let the battery absorb the peaks, and pocket the demand charge savings — if the battery lasts the evening rush.</p>
+    <div style="margin-top:18px"><button class="primary" onclick="document.getElementById('overlay').style.display='none'">Start designing</button></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="site">
+    <h1>Station Tycoon <span class="bolt">⚡</span></h1>
+    <span class="tag">site 042 · 24h simulation · 1 tick = 1 min</span>
+  </header>
+
+  <div class="panel">
+    <h2>Site configuration</h2>
+    <div class="cfg">
+      <div><label>Ports: <span class="val" id="vP">6</span></label><input type="range" id="iP" min="2" max="12" step="1" value="6"></div>
+      <div><label>Power per port: <span class="val" id="vK">200 kW</span></label><input type="range" id="iK" min="100" max="400" step="50" value="200"></div>
+      <div><label>Grid connection (fixed by site)</label><div class="val" id="vG" style="font-size:15px;padding-top:2px">—</div></div>
+      <div><label>Grid draw limit: <span class="val" id="vL">—</span></label><input type="range" id="iL" min="100" max="1000" step="50" value="1000"></div>
+      <div><label>Charging price: <span class="val" id="vC">$0.45/kWh</span></label><input type="range" id="iC" min="0.30" max="0.75" step="0.01" value="0.45"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding-top:14px"><input type="checkbox" id="iB"><label for="iB" style="margin:0;font-size:14px;color:var(--ink)">Battery (380 kWh / 250 kW)</label></div>
+      <div><label>Cabinets (800 kW per 6 ports): <span class="val" id="vCb">1</span></label><div class="val" id="vCap" style="font-size:14px;padding-top:2px">—</div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="bRun">▶ Run day</button>
+    <button id="bSpd">Speed: 1×</button>
+    <button id="bRst">Reset</button>
+    <button id="bNew">New scenario</button>
+    <span class="clock" id="clock">00:00</span>
+  </div>
+
+  <div class="metrics">
+    <div class="mc"><div class="l">Revenue</div><div class="n" id="mRev">$0</div></div>
+    <div class="mc"><div class="l">Profit incl. capex</div><div class="n" id="mPro">$0</div></div>
+    <div class="mc"><div class="l">Driver happiness</div><div class="n" id="mHap">—</div></div>
+    <div class="mc"><div class="l">Queue now</div><div class="n" id="mQ">0</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="meter"><div class="t"><span>Grid draw</span><span class="num" id="tGrid">0 / 400 kW · billed 15-min peak 0</span></div>
+    <div class="bar"><div id="bGrid" style="width:0%;background:var(--blue)"></div></div></div>
+    <div class="meter" id="battRow"><div class="t"><span>Battery charge</span><span class="num" id="tBatt">—</span></div>
+    <div class="bar"><div id="bBatt" style="width:0%;background:var(--teal)"></div></div></div>
+    <div id="cabs"></div>
+  </div>
+
+  <div class="ports" id="ports"></div>
+  <div class="qrow" id="qrow"></div>
+  <div class="panel" id="score" style="display:none"></div>
+  <p class="note">Demand is random — run the same configuration a few times before judging it. The grid connection is fixed per scenario (400–1000 kW); use New scenario to draw a different site. Market constants: wholesale energy $0.11/kWh · demand charge $18/kW-month on billed 15-min peak · capex amortized over 10 years.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const ELEC=0.11, DEM=18, AMORT=3650, BCAP=380, BDIS=250, BCHG=150, BCOST=150000, CABKW=800, CABCOST=100000;
+const C_OK='#0E8A6D', C_MID='#C97E10', C_BAD='#C8401F';
+let cfg={p:6,k:200,g:400,c:0.45,b:false}, speed=1, timer=null, S=null;
+const nCab=()=>Math.ceil(cfg.p/6);
+function capex(){return (cfg.p*(30000+150*cfg.k)+nCab()*CABCOST+(cfg.b?BCOST:0))/AMORT;}
+function rollGrid(){cfg.g=400+50*Math.floor(Math.random()*13); const iL=$('iL'); iL.max=cfg.g; iL.value=cfg.g;}
+function syncCfg(){
+  cfg.p=+$('iP').value; cfg.k=+$('iK').value; cfg.c=+$('iC').value; cfg.b=$('iB').checked;
+  cfg.lim=Math.min(+$('iL').value,cfg.g);
+  $('vP').textContent=cfg.p; $('vK').textContent=cfg.k+' kW'; $('vG').textContent=cfg.g+' kW';
+  $('vL').textContent=cfg.lim+' kW';
+  $('vC').textContent='$'+cfg.c.toFixed(2)+'/kWh'; $('vCb').textContent=nCab();
+  $('vCap').textContent='Capex $'+Math.round(capex()).toLocaleString()+'/day';
+  $('battRow').style.opacity=cfg.b?1:0.35; drawPorts(); drawCabs([]);
+}
+['iP','iK','iC','iB','iL'].forEach(id=>$(id).addEventListener('input',syncCfg));
+
+function lam(h){ if(h<6)return 1.2; if(h<9)return 7+(h-6)*1.5; if(h<15)return 6; if(h<19)return 9+(h>=16&&h<18?3:0); if(h<22)return 5; return 2;}
+function newCar(){
+  const r=Math.random(); let P,E,ty;
+  if(r<0.12){P=55+Math.random()*25;E=58+Math.random()*8;ty='Legacy';}
+  else if(r<0.67){P=150+Math.random()*100;E=72+Math.random()*10;ty='Mainstream';}
+  else if(r<0.92){P=230+Math.random()*120;E=78+Math.random()*22;ty='800V';}
+  else{P=300+Math.random()*100;E=100+Math.random()*30;ty='Truck/lux';}
+  return {P:Math.round(P),E,soc:0.08+Math.random()*0.32,tgt:0.8+Math.random()*0.15,ratioSum:0,ticks:0,ty};
+}
+function curve(c){const s=c.soc; if(s<0.45)return c.P; if(s<0.8)return c.P*(1-0.6*(s-0.45)/0.35); return Math.max(c.P*0.12, c.P*(0.4-0.28*(s-0.8)/0.2));}
+function freshState(){return {t:0,cars:new Array(cfg.p).fill(null),q:[],soc:cfg.b?BCAP*0.5:0,kwhSold:0,kwhGrid:0,winE:0,billPeak:0,served:0,balk:0,renege:0,happy:0,done:0,gridNow:0,cabLoad:[]};}
+
+function tick(){
+  S.t++;
+  const h=S.t/60, mult=Math.min(1.6,Math.max(0.5,Math.pow(0.45/cfg.c,0.8)));
+  if(Math.random()<lam(h)*mult/60){
+    const free=S.cars.findIndex(c=>!c);
+    if(free>=0){S.cars[free]=newCar();S.served++;}
+    else if(S.q.length<5){S.q.push({car:newCar(),pat:Math.round(5+Math.random()*10)});}
+    else S.balk++;
+  }
+  for(let i=S.q.length-1;i>=0;i--){ S.q[i].pat--; if(S.q[i].pat<=0){S.q.splice(i,1);S.renege++;}}
+  let fi; while(S.q.length&&(fi=S.cars.findIndex(c=>!c))>=0){S.cars[fi]=S.q.shift().car;S.served++;}
+  const des=S.cars.map(c=>c?Math.min(curve(c),cfg.k):0), eff=des.slice(), nc=nCab(); S.cabLoad=[];
+  for(let cb=0;cb<nc;cb++){ let s=0; for(let i=cb*6;i<Math.min(cfg.p,cb*6+6);i++)s+=des[i];
+    const sc=s>CABKW?CABKW/s:1; let load=0;
+    for(let i=cb*6;i<Math.min(cfg.p,cb*6+6);i++){eff[i]=des[i]*sc;load+=eff[i];}
+    S.cabLoad.push(load);
+  }
+  let total=eff.reduce((a,b)=>a+b,0), battKW=cfg.b?Math.min(BDIS,S.soc*60):0, supply=cfg.lim+battKW, scale=1, gridDraw=0;
+  if(total<=cfg.lim){ gridDraw=total;
+    if(cfg.b&&S.soc<BCAP){const ch=Math.min(BCHG,cfg.lim-total,(BCAP-S.soc)*60);gridDraw+=ch;S.soc=Math.min(BCAP,S.soc+ch/60);}
+  } else if(total<=supply){ gridDraw=cfg.lim; S.soc-=(total-cfg.lim)/60;
+  } else { scale=supply/total; gridDraw=cfg.lim; S.soc-=battKW/60;}
+  S.soc=Math.max(0,S.soc); S.gridNow=gridDraw; S.kwhGrid+=gridDraw/60;
+  S.cabLoad=S.cabLoad.map(l=>l*scale);
+  S.winE+=gridDraw/60; if(S.t%15===0){S.billPeak=Math.max(S.billPeak,S.winE*4);S.winE=0;}
+  S.cars.forEach((c,i)=>{ if(!c)return;
+    const cap=curve(c), a=Math.min(cap,cfg.k)*scale;
+    S.kwhSold+=a/60; c.soc+=a/60/c.E; c.ratioSum+=cap>0?a/cap:1; c.ticks++;
+    if(c.soc>=c.tgt){S.done++; if(c.ratioSum/c.ticks>=0.9)S.happy++; S.cars[i]=null;}
+  });
+  if(S.t>=1440){stop();finish();}
+}
+
+function fmt$(x){return (x<0?'-$':'$')+Math.abs(Math.round(x)).toLocaleString();}
+function econ(){const rev=S.kwhSold*cfg.c; return {rev,energy:S.kwhGrid*ELEC,dem:S.billPeak*DEM/30,pro:rev-S.kwhGrid*ELEC-S.billPeak*DEM/30-capex()};}
+function drawCabs(loads){
+  const el=$('cabs'); el.innerHTML='';
+  for(let i=0;i<nCab();i++){ const L=loads[i]||0;
+    el.innerHTML+='<div class="meter"><div class="t"><span>Cabinet '+(i+1)+'</span><span class="num">'+Math.round(L)+' / '+CABKW+' kW</span></div><div class="bar"><div style="width:'+Math.min(100,L/CABKW*100)+'%;background:'+(L>CABKW*0.95?'var(--amber)':'#7F77DD')+'"></div></div></div>';
+  }
+}
+function drawPorts(){
+  const el=$('ports'); el.innerHTML='';
+  const cars=S?S.cars:new Array(cfg.p).fill(null);
+  for(let i=0;i<cfg.p;i++){ const c=cars[i], d=document.createElement('div'); d.className='port';
+    if(!c){d.innerHTML='<div class="hd">Port '+(i+1)+'</div><div style="font-size:13px;color:var(--faint);margin-top:18px">○ open</div>';}
+    else{ const ratio=c.ticks?c.ratioSum/c.ticks:1, col=ratio>=0.9?C_OK:(ratio>=0.6?C_MID:C_BAD);
+      const cap=Math.round(curve(c));
+      d.innerHTML='<div class="hd">Port '+(i+1)+' · '+c.ty+' ('+c.P+' kW)</div>'
+      +'<div class="pw" style="color:'+col+'">'+Math.round(ratio*100)+'% of ask · wants '+cap+' kW</div>'
+      +'<div class="bar"><div style="width:'+Math.min(100,Math.round(c.soc*100))+'%;background:'+col+'"></div></div>'
+      +'<div class="ft">SOC '+Math.round(c.soc*100)+'% → '+Math.round(c.tgt*100)+'%</div>';}
+    el.appendChild(d);
+  }
+}
+function paint(){
+  $('clock').textContent=String(Math.floor(S.t/60)).padStart(2,'0')+':'+String(S.t%60).padStart(2,'0');
+  const e=econ();
+  $('mRev').textContent=fmt$(e.rev); $('mPro').textContent=fmt$(e.pro);
+  $('mPro').style.color=e.pro>=0?C_OK:C_BAD;
+  const den=S.done+S.balk+S.renege;
+  $('mHap').textContent=den?Math.round(S.happy/den*100)+'%':'—';
+  $('mQ').textContent=S.q.length;
+  $('tGrid').textContent=Math.round(S.gridNow)+' / '+cfg.lim+' kW limit (site max '+cfg.g+') · billed 15-min peak '+Math.round(S.billPeak);
+  $('bGrid').style.width=Math.min(100,S.gridNow/cfg.lim*100)+'%';
+  if(cfg.b){$('tBatt').textContent=Math.round(S.soc)+' / '+BCAP+' kWh';$('bBatt').style.width=(S.soc/BCAP*100)+'%';}
+  else{$('tBatt').textContent='not installed';$('bBatt').style.width='0%';}
+  drawCabs(S.cabLoad); drawPorts();
+  $('qrow').textContent=S.q.length?('⏱ '+S.q.length+' waiting ('+S.q.map(x=>x.pat+'m').join(', ')+' patience left)'):'';
+}
+function loop(){for(let i=0;i<speed;i++){if(timer)tick();else break;}paint();}
+function setCfgEnabled(on){['iP','iK','iC','iB','iL'].forEach(id=>$(id).disabled=!on);}
+function stop(){if(timer){clearInterval(timer);timer=null;}$('bRun').textContent='▶ Run day';setCfgEnabled(true);}
+function finish(){
+  const e=econ(), den=S.done+S.balk+S.renege, hap=den?S.happy/den*100:0, util=S.kwhSold/(cfg.p*cfg.k*24)*100;
+  let v; if(e.pro>800&&hap>85)v='Excellent — profitable and drivers love it.';
+  else if(e.pro>0&&hap>85)v='Happy drivers, thin margins.';
+  else if(e.pro>800)v='Profitable, but drivers are getting throttled or stuck in line.';
+  else if(e.pro>0)v='Barely breaking even with unhappy drivers. Rethink the design.';
+  else v='Losing money. Capex and demand charges are eating you alive.';
+  $('score').style.display='block';
+  $('score').innerHTML='<h3>End of day scorecard</h3>'
+  +'<div class="metrics" style="margin-bottom:12px">'
+  +'<div class="mc"><div class="l">Daily profit</div><div class="n" style="color:'+(e.pro>=0?C_OK:C_BAD)+'">'+fmt$(e.pro)+'</div></div>'
+  +'<div class="mc"><div class="l">Driver happiness</div><div class="n">'+Math.round(hap)+'%</div></div>'
+  +'<div class="mc"><div class="l">Utilization</div><div class="n">'+util.toFixed(1)+'%</div></div>'
+  +'<div class="mc"><div class="l">Energy sold</div><div class="n">'+Math.round(S.kwhSold).toLocaleString()+' kWh</div></div></div>'
+  +'<div class="note" style="margin-bottom:10px">Energy '+fmt$(e.energy)+' · demand charge '+fmt$(e.dem)+' (billed peak '+Math.round(S.billPeak)+' kW) · capex '+fmt$(capex())+' · served '+S.served+' · balked '+S.balk+' · gave up in line '+S.renege+'</div>'
+  +'<div style="font-size:14px">'+v+'</div>';
+}
+$('bRun').addEventListener('click',()=>{
+  if(timer){stop();return;}
+  if(!S||S.t>=1440){S=freshState();$('score').style.display='none';}
+  setCfgEnabled(false);
+  $('bRun').textContent='⏸ Pause';
+  timer=setInterval(loop,100);
+});
+$('bSpd').addEventListener('click',()=>{speed=speed===1?4:(speed===4?16:1);$('bSpd').textContent='Speed: '+speed+'×';});
+$('bRst').addEventListener('click',()=>{stop();S=freshState();$('score').style.display='none';paint();});
+$('bNew').addEventListener('click',()=>{stop();rollGrid();syncCfg();S=freshState();$('score').style.display='none';paint();});
+rollGrid(); syncCfg(); S=freshState(); paint();
+</script>
+</body>
+</html>
