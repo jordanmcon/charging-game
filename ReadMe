@@ -1,0 +1,72 @@
+# Station Tycoon v3 — Phase 1
+
+Deterministic, server-recomputable simulation engine + refactored game front end.
+This is the foundation for the monthly leaderboard challenge: every score can be
+reproduced bit-for-bit from `(config, scenarioId)`, so the server never has to
+trust a client-submitted number.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `engine.js` | Pure sim engine. UMD module: `window.StationEngine` in the browser, `require('./engine')` in Node. No DOM, no `Math.random()`. |
+| `scenarios.js` | Monthly scenario definitions (site, tariff, grid limit, # demand days). Treat published entries as immutable. |
+| `index.html` | The game, wired to the engine. Day 1 is animated; the official score averages 7 seeded demand days and renders on completion. |
+| `test.js` | Verification suite: `node test.js` |
+
+## How scoring works
+
+- Each scenario defines 7 demand days. Day `d` uses a PRNG seeded from
+  `hash(scenario.id + '::day' + d)`, so demand traces are fixed for the month
+  and identical for every player.
+- **Score = avg daily profit × (avg happiness)²** when profitable; raw average
+  profit when not. Happiness = % of drivers averaging ≥90% of requested power
+  (balked and reneged drivers count as unhappy).
+- The animated day the player watches is demand day 0 of the scoring set —
+  what you watch is what you're scored on (1/7th of it, anyway).
+
+## Phase 2 integration contract
+
+The client submits **only** `{ scenarioId, config }` where config is
+`{ ports, portKW, drawLimit, battery, price }`. The serverless endpoint:
+
+```js
+const E = require('./engine');
+const Scenarios = require('./scenarios');
+const scn = Scenarios.get(body.scenarioId);          // reject unknown/closed months
+const result = E.scoreConfig(body.config, scn);      // validateConfig runs inside
+// result.score is authoritative; ignore anything the client claims
+```
+
+Pin `engine.js` + `scenarios.js` to identical versions on client and server
+(the score payload includes `engineVersion` for sanity checking). Any change to
+engine constants mid-month invalidates the month's leaderboard — version-gate
+deployments accordingly.
+
+## Verified (test.js)
+
+- Determinism: identical config → identical 7-day results and score.
+- Parity: a manually ticked animated day exactly equals the batch `runDay`.
+- Validation: out-of-range configs clamp; non-numeric configs throw.
+- Sanity sweep: no NaN across a config grid; scores order plausibly.
+
+## Balance (v3.1.0, verified by 2,100-config sweep)
+
+The v3.0.0 exploit — pin price at the slider max — is closed. Price elasticity
+was strengthened (exponent 0.8 → 1.4, demand clamp widened to [0.3, 2.0]),
+making the revenue-optimal price interior (~$0.50–0.55 on the June scenario)
+with score falling off in both directions.
+
+Resulting meta on scenario 2026-06, sweeping ports × portKW × drawLimit ×
+battery × price (2,100 configs):
+
+- Winner: 6 ports / 350 kW / draw limit 500 of 600 / battery / $0.50.
+- All of the top 20 configs use the battery; 14 of 20 cap draw below the
+  interconnection.
+- The best battery-free design ranks #99, scoring ~12% below the winner —
+  the battery is decisive but not an auto-win; sizing still matters.
+- Overbuilds (10–12 ports, 400 kW) no longer appear in the top ranks.
+
+Re-tune per scenario by adjusting tariff values in `scenarios.js` (higher
+demand charges push optimal draw limits lower). Engine constants are frozen
+for any month with posted scores; bump VERSION on any change.
